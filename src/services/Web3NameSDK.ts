@@ -1,8 +1,8 @@
 
-import { Web3Name } from '@web3-name-sdk/core';
+import { createWeb3Name } from '@web3-name-sdk/core';
 
 // Initialize the SDK (defaulting to BNB Chain)
-const web3Name = new Web3Name({
+const web3Name = createWeb3Name({
   bnb: {
     // Default to mainnet
     network: 'mainnet'
