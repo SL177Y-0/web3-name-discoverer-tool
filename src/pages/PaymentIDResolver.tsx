@@ -4,35 +4,40 @@ import ResultModal from '@/components/ResultModal';
 import { Web3NameService } from '@/services/Web3NameSDK';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Copy } from 'lucide-react';
+import { Copy, AtSign } from 'lucide-react';
 import { copyToClipboard } from '@/utils/clipboard';
 
-const CryptoResolver = () => {
+const PaymentIDResolver = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [domain, setDomain] = useState('');
+  const [paymentId, setPaymentId] = useState('');
   const [addresses, setAddresses] = useState<Record<string, string>>({});
-  const [emails, setEmails] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSearch = async (domainName: string) => {
+  const handleSearch = async (input: string) => {
+    // Enforce that input contains @ to be a valid Payment ID
+    if (!input.includes('@')) {
+      setError('Please enter a valid Payment ID (e.g., username@domain)');
+      setIsModalOpen(true);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
-    setDomain(domainName);
+    setPaymentId(input);
     
     try {
-      const { cryptoAddresses, emailAddresses } = await Web3NameService.resolveAllRecords(domainName);
+      const addressResults = await Web3NameService.getAllAddresses(input);
       
-      setEmails(emailAddresses);
-      setAddresses(cryptoAddresses);
+      setAddresses(addressResults);
       setIsModalOpen(true);
       
-      if (Object.keys(cryptoAddresses).length === 0) {
-        setError(`No cryptocurrency addresses found for ${domainName}`);
+      if (Object.keys(addressResults).length === 0) {
+        setError(`No addresses found for ${input}. Please check if the Payment ID is correct.`);
       }
     } catch (err) {
       console.error('Error resolving addresses:', err);
-      setError(`Failed to resolve domain ${domainName}. Please try again.`);
+      setError(`Failed to resolve Payment ID: ${input}. Please try again.`);
     } finally {
       setIsLoading(false);
     }
@@ -46,22 +51,29 @@ const CryptoResolver = () => {
     <div className="max-w-2xl mx-auto">
       <div className="text-center mb-10">
         <div className="inline-flex items-center justify-center w-16 h-16 bg-web3-purple/10 rounded-full mb-4">
-          <svg className="h-8 w-8 text-web3-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
+          <AtSign className="h-8 w-8 text-web3-purple" />
         </div>
-        <h2 className="text-2xl font-bold text-web3-deep-blue mb-2">Crypto Addresses Resolver</h2>
+        <h2 className="text-2xl font-bold text-web3-deep-blue mb-2">Payment ID Resolver</h2>
         <p className="text-gray-600 max-w-md mx-auto">
-          Find all cryptocurrency addresses associated with a Web3 domain name.
+          Find all cryptocurrency addresses associated with a Payment ID like username@domain.
         </p>
       </div>
       
-      <DomainSearch onSearch={handleSearch} isLoading={isLoading} />
+      <DomainSearch 
+        onSearch={handleSearch} 
+        isLoading={isLoading} 
+        placeholder="Enter a Payment ID (e.g., username@binance)"
+      />
+      
+      <div className="mt-8 text-center text-sm text-gray-500">
+        <p>A Payment ID is a human-readable identifier for sending crypto across multiple chains.</p>
+        <p className="mt-1">Examples: john@binance, alice@coinbase, bob@metamask</p>
+      </div>
       
       <ResultModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)}
-        title={`Crypto Addresses for ${domain}`}
+        title={`Crypto Addresses for ${paymentId}`}
       >
         {error ? (
           <div className="text-center py-4">
@@ -101,7 +113,7 @@ const CryptoResolver = () => {
             </div>
             
             <p className="text-sm text-gray-500 mt-6 text-center">
-              These addresses were found in the records for {domain}.
+              These addresses were found in the records for {paymentId}.
             </p>
           </div>
         ) : (
@@ -114,4 +126,4 @@ const CryptoResolver = () => {
   );
 };
 
-export default CryptoResolver;
+export default PaymentIDResolver; 
